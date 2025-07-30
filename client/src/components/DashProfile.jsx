@@ -1,12 +1,12 @@
 import { Alert, Button, Modal, ModalBody, TextInput } from 'flowbite-react';
 import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
-import {
-  getDownloadURL,
-  getStorage,
-  ref,
-  uploadBytesResumable,
-} from 'firebase/storage';
+// import {
+//   getDownloadURL,
+//   getStorage,
+//   ref,
+//   uploadBytesResumable,
+// } from 'firebase/storage';
 import { app } from '../firebase';
 import { CircularProgressbar } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
@@ -49,49 +49,46 @@ export default function DashProfile() {
     }
   }, [imageFile]);
 
-  const uploadImage = async () => {
-    // service firebase.storage {
-    //   match /b/{bucket}/o {
-    //     match /{allPaths=**} {
-    //       allow read;
-    //       allow write: if
-    //       request.resource.size < 2 * 1024 * 1024 &&
-    //       request.resource.contentType.matches('image/.*')
-    //     }
-    //   }
-    // }
-    setImageFileUploading(true);
-    setImageFileUploadError(null);
-    const storage = getStorage(app);
-    const fileName = new Date().getTime() + imageFile.name;
-    const storageRef = ref(storage, fileName);
-    const uploadTask = uploadBytesResumable(storageRef, imageFile);
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const progress =
-          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+const uploadImage = async () => {
+  setImageFileUploading(true);
+  setImageFileUploadError(null);
+  setImageFileUploadProgress(0);
 
-        setImageFileUploadProgress(progress.toFixed(0));
-      },
-      (error) => {
-        setImageFileUploadError(
-          'Could not upload image (File must be less than 2MB)'
-        );
-        setImageFileUploadProgress(null);
-        setImageFile(null);
-        setImageFileUrl(null);
-        setImageFileUploading(false);
-      },
-      () => {
-        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-          setImageFileUrl(downloadURL);
-          setFormData({ ...formData, profilePicture: downloadURL });
-          setImageFileUploading(false);
-        });
+  try {
+    const formDataUpload = new FormData();
+    formDataUpload.append('file', imageFile);
+    formDataUpload.append('upload_preset', 'test1234'); // ✅ Cloudinary preset
+
+    const res = await fetch(
+      'https://api.cloudinary.com/v1_1/dw6jtcs09/image/upload',
+      {
+        method: 'POST',
+        body: formDataUpload,
       }
     );
-  };
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setImageFileUrl(data.secure_url);
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        profilePicture: data.secure_url,
+      }));
+      setImageFileUploading(false);
+      setImageFileUploadProgress(null);
+    } else {
+      throw new Error('Upload failed');
+    }
+  } catch (error) {
+    setImageFileUploadError('Could not upload image (File must be less than 2MB)');
+    setImageFileUploadProgress(null);
+    setImageFile(null);
+    setImageFileUrl(null);
+    setImageFileUploading(false);
+  }
+};
+
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });

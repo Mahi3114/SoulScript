@@ -1,12 +1,12 @@
 import { Alert, Button, FileInput, Select, TextInput } from 'flowbite-react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import {
-  getDownloadURL,
-  getStorage,
-  ref,
-  uploadBytesResumable,
-} from 'firebase/storage';
+// import {
+//   getDownloadURL,
+//   getStorage,
+//   ref,
+//   uploadBytesResumable,
+// } from 'firebase/storage';
 import { app } from '../firebase';
 import { useState } from 'react';
 import { CircularProgressbar } from 'react-circular-progressbar';
@@ -22,42 +22,80 @@ export default function CreatePost() {
 
   const navigate = useNavigate();
 
+  // const handleUpdloadImage = async () => {
+  //   try {
+  //     if (!file) {
+  //       setImageUploadError('Please select an image');
+  //       return;
+  //     }
+  //     setImageUploadError(null);
+  //     const storage = getStorage(app);
+  //     const fileName = new Date().getTime() + '-' + file.name;
+  //     const storageRef = ref(storage, fileName);
+  //     const uploadTask = uploadBytesResumable(storageRef, file);
+  //     uploadTask.on(
+  //       'state_changed',
+  //       (snapshot) => {
+  //         const progress =
+  //           (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+  //         setImageUploadProgress(progress.toFixed(0));
+  //       },
+  //       (error) => {
+  //         setImageUploadError('Image upload failed');
+  //         setImageUploadProgress(null);
+  //       },
+  //       () => {
+  //         getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+  //           setImageUploadProgress(null);
+  //           setImageUploadError(null);
+  //           setFormData({ ...formData, image: downloadURL });
+  //         });
+  //       }
+  //     );
+  //   } catch (error) {
+  //     setImageUploadError('Image upload failed');
+  //     setImageUploadProgress(null);
+  //     console.log(error);
+  //   }
+  // };
+  
   const handleUpdloadImage = async () => {
-    try {
-      if (!file) {
-        setImageUploadError('Please select an image');
-        return;
-      }
+  try {
+    if (!file) {
+      setImageUploadError('Please select an image');
+      return;
+    }
+
+    setImageUploadError(null);
+    setImageUploadProgress(0);
+
+    const formDataUpload = new FormData();
+    formDataUpload.append('file', file);
+    formDataUpload.append('upload_preset', 'test1234'); // ✅ Your preset name
+
+    const res = await fetch('https://api.cloudinary.com/v1_1/dw6jtcs09/image/upload', {
+      method: 'POST',
+      body: formDataUpload,
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setFormData({ ...formData, image: data.secure_url });
+      setImageUploadProgress(null);
       setImageUploadError(null);
-      const storage = getStorage(app);
-      const fileName = new Date().getTime() + '-' + file.name;
-      const storageRef = ref(storage, fileName);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress =
-            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setImageUploadProgress(progress.toFixed(0));
-        },
-        (error) => {
-          setImageUploadError('Image upload failed');
-          setImageUploadProgress(null);
-        },
-        () => {
-          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-            setImageUploadProgress(null);
-            setImageUploadError(null);
-            setFormData({ ...formData, image: downloadURL });
-          });
-        }
-      );
-    } catch (error) {
+    } else {
       setImageUploadError('Image upload failed');
       setImageUploadProgress(null);
-      console.log(error);
     }
-  };
+  } catch (error) {
+    setImageUploadError('Image upload failed');
+    setImageUploadProgress(null);
+    console.error(error);
+  }
+};
+
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
