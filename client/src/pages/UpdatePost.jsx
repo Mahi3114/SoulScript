@@ -14,102 +14,61 @@ import 'react-circular-progressbar/dist/styles.css';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
+// ... your imports unchanged
+
 export default function UpdatePost() {
-  const [file, setFile] = useState(null);
-  const [imageUploadProgress, setImageUploadProgress] = useState(null);
-  const [imageUploadError, setImageUploadError] = useState(null);
-  const [formData, setFormData] = useState({});
-  const [publishError, setPublishError] = useState(null);
-  const { postId } = useParams();
+  // ... your states unchanged, plus:
+  const [tags, setTags] = useState('');
 
-  const navigate = useNavigate();
-    const { currentUser } = useSelector((state) => state.user);
-
+  // In your useEffect after fetching post:
   useEffect(() => {
     try {
       const fetchPost = async () => {
         const res = await fetch(`/api/post/getposts?postId=${postId}`);
         const data = await res.json();
         if (!res.ok) {
-          console.log(data.message);
           setPublishError(data.message);
           return;
         }
-        if (res.ok) {
-          setPublishError(null);
-          setFormData(data.posts[0]);
-        }
+        setPublishError(null);
+        setFormData(data.posts[0]);
+        setTags(data.posts[0].tags ? data.posts[0].tags.join(', ') : '');
       };
-
       fetchPost();
     } catch (error) {
       console.log(error.message);
     }
   }, [postId]);
 
-const handleUpdloadImage = async () => {
-  try {
-    if (!file) {
-      setImageUploadError('Please select an image');
-      return;
-    }
-
-    setImageUploadError(null);
-    setImageUploadProgress(0);
-
-    const formDataUpload = new FormData();
-    formDataUpload.append('file', file);
-    formDataUpload.append('upload_preset', 'test1234'); // ✅ Your Cloudinary preset
-
-    const res = await fetch(
-      'https://api.cloudinary.com/v1_1/dw6jtcs09/image/upload',
-      {
-        method: 'POST',
-        body: formDataUpload,
-      }
-    );
-
-    const data = await res.json();
-
-    if (res.ok) {
-      setFormData({ ...formData, image: data.secure_url });
-      setImageUploadProgress(null);
-      setImageUploadError(null);
-    } else {
-      setImageUploadError('Image upload failed');
-      setImageUploadProgress(null);
-    }
-  } catch (error) {
-    setImageUploadError('Image upload failed');
-    setImageUploadProgress(null);
-    console.error(error);
-  }
-};
-
+  // When submitting, convert tags string to array:
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const tagsArray = tags
+        .split(',')
+        .map((t) => t.trim())
+        .filter((t) => t);
+
+      const updatedData = { ...formData, tags: tagsArray };
+
       const res = await fetch(`/api/post/updatepost/${formData._id}/${currentUser._id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData),
       });
       const data = await res.json();
+
       if (!res.ok) {
         setPublishError(data.message);
         return;
       }
-
-      if (res.ok) {
-        setPublishError(null);
-        navigate(`/post/${data.slug}`);
-      }
+      setPublishError(null);
+      navigate(`/post/${data.slug}`);
     } catch (error) {
       setPublishError('Something went wrong');
     }
   };
+
   return (
     <div className='p-3 max-w-3xl mx-auto min-h-screen'>
       <h1 className='text-center text-3xl my-7 font-semibold'>Update post</h1>
@@ -121,23 +80,29 @@ const handleUpdloadImage = async () => {
             required
             id='title'
             className='flex-1'
-            onChange={(e) =>
-              setFormData({ ...formData, title: e.target.value })
-            }
-            value={formData.title}
+            value={formData.title || ''}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
           />
           <Select
-            onChange={(e) =>
-              setFormData({ ...formData, category: e.target.value })
-            }
-            value={formData.category}
+            value={formData.category || ''}
+            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
           >
             <option value='uncategorized'>Select a category</option>
-            <option value='javascript'>JavaScript</option>
-            <option value='reactjs'>React.js</option>
-            <option value='nextjs'>Next.js</option>
+            <option value='poem'>Poem</option>
+            <option value='thought'>Thought</option>
+            <option value='story'>Story</option>
           </Select>
         </div>
+
+        {/* Tags input */}
+        <TextInput
+          type='text'
+          placeholder='Tags (comma separated)'
+          value={tags}
+          onChange={(e) => setTags(e.target.value)}
+        />
+
+        {/* Image upload section remains unchanged */}
         <div className='flex gap-4 items-center justify-between border-4 border-teal-500 border-dotted p-3'>
           <FileInput
             type='file'
@@ -174,13 +139,11 @@ const handleUpdloadImage = async () => {
         )}
         <ReactQuill
           theme='snow'
-          value={formData.content}
+          value={formData.content || ''}
           placeholder='Write something...'
           className='h-72 mb-12'
           required
-          onChange={(value) => {
-            setFormData({ ...formData, content: value });
-          }}
+          onChange={(value) => setFormData({ ...formData, content: value })}
         />
         <Button type='submit' gradientDuoTone='purpleToPink'>
           Update post

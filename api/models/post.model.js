@@ -1,38 +1,38 @@
 import mongoose from 'mongoose';
 
-const postSchema = new mongoose.Schema(
-  {
-    userId: {
-      type: String,
-      required: true,
-    },
-    content: {
-      type: String,
-      required: true,
-    },
-    title: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    image: {
-      type: String,
-      default:
-        'https://www.hostinger.com/tutorials/wp-content/uploads/sites/2/2021/09/how-to-write-a-blog-post.png',
-    },
-    category: {
-      type: String,
-      default: 'uncategorized',
-    },
-    slug: {
-      type: String,
-      required: true,
-      unique: true,
-    },
+const postSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
   },
-  { timestamps: true }
-);
+  content: {      
+    type: String,
+    required: true,
+  },
+  author: {       
+    type: String,
+    required: true,
+  },
+  category: {
+    type: String,
+    enum: ['Poem', 'Thought', 'Story'],
+    default: 'Thought',
+  },
+  tags: {
+    type: [String],
+    default: [],
+  },
+  image: String,
+  slug: {
+    type: String,
+    unique: true,
+    required: true,
+  },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+}, { timestamps: true });
 
-const Post = mongoose.model('Post', postSchema);
-
-export default Post;
+export default mongoose.model('Post', postSchema);

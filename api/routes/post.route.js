@@ -4,10 +4,9 @@ import { create, deletepost, getposts, updatepost } from '../controllers/post.co
 
 const router = express.Router();
 
-router.post('/create', verifyToken, create)
-router.get('/getposts', getposts)
-router.delete('/deletepost/:postId/:userId', verifyToken, deletepost)
-router.put('/updatepost/:postId/:userId', verifyToken, updatepost)
-
+router.post('/create', verifyToken, create);                   // Protect create post
+router.get('/getposts', getposts);                             // Public get posts
+router.delete('/deletepost/:postId/:userId', verifyToken, deletepost); // Protect delete
+router.put('/updatepost/:postId/:userId', verifyToken, updatepost);    // Protect update
 
 export default router;
